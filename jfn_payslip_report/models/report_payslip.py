@@ -4,12 +4,16 @@ from odoo import api, models
 
 class ReportPayslipJFN(models.AbstractModel):
     """
-    On hérite du report standard pour injecter:
+    Report payslip pour injecter :
     - des sections ordonnées (Basique, Allocation, Brut, Déductions, Net)
     - suppression des lignes à 0
     - dispatch des montants dans les colonnes (gain/retenue salarié, retenue patronale)
+
+    On définit le modèle directement afin d'éviter une dépendance dure à un
+    modèle de report qui peut ne pas exister selon la version/édition d'Odoo.
     """
-    _inherit = "report.hr_payroll.report_payslip"
+    _name = "report.hr_payroll.report_payslip"
+    _description = "JFN Payslip Report"
 
     # Ordre FIXE des sections (selon ton fichier de règles)
     SECTION_ORDER = [
@@ -115,8 +119,13 @@ class ReportPayslipJFN(models.AbstractModel):
 
     @api.model
     def _get_report_values(self, docids, data=None):
-        res = super()._get_report_values(docids, data=data)
-        docs = res.get("docs")
+        docs = self.env["hr.payslip"].browse(docids)
+        res = {
+            "doc_ids": docids,
+            "doc_model": "hr.payslip",
+            "docs": docs,
+            "data": data,
+        }
         payload = []
 
         for slip in docs:
